@@ -1,0 +1,6 @@
+QUARTUS_VERSION = "20.1"
+DATE = "10:00:00  July 07, 2026"
+
+# Revisions
+
+PROJECT_REVISION = "jpeg_compress_gray"
