@@ -6,6 +6,16 @@
 
 ---
 
+## 快速下载
+
+| 方式 | 命令 / 链接 | 说明 |
+|------|-------------|------|
+| **克隆仓库** | `git clone https://github.com/Wss051/jpeg_compress_gray.git` | 完整历史记录 |
+| **下载 ZIP** | [📥 点击下载](https://github.com/Wss051/jpeg_compress_gray/archive/refs/heads/main.zip) | 仅当前版本，无 Git 历史 |
+| **浏览文件** | [GitHub 文件浏览器](https://github.com/Wss051/jpeg_compress_gray/tree/main) | 在线查看单个文件 |
+
+---
+
 ## 项目概述
 
 本项目实现了一个完整的 **320×320 灰度图像 JPEG-like 压缩器**，输入为 RGB565 像素流，输出为标准 JPEG 熵编码符号流。设计采用 **Altera Cyclone IV** 系列 FPGA 为目标平台，使用 **Quartus Prime** 进行综合与实现。
@@ -29,27 +39,7 @@
 
 ## 系统架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      jpeg_compress_top                       │
-│  ┌─────────┐   ┌────────┐   ┌─────────┐   ┌──────────┐    │
-│  │   Y     │   │ image  │   │block_fifo│   │  dct_2d  │    │
-│  │RGB565→Y │ → │320×320 │ → │ 512×8b  │ → │ 8×8 2D   │    │
-│  │  8-bit  │   │分块输出 │   │  缓冲   │   │   DCT    │    │
-│  └─────────┘   └────────┘   └─────────┘   └────┬─────┘    │
-│                                                  │          │
-│  ┌─────────┐   ┌──────────┐   ┌────────────────┐ │          │
-│  │quantizer│ ← │   arm    │ ← │ transpose_ram  │ │          │
-│  │ 标量量化│   │ 输入缓冲 │   │  8×8 转置缓冲  │ │          │
-│  └────┬────┘   └──────────┘   └────────────────┘ │          │
-│       │                                          │          │
-│       ↓                                          │          │
-│  ┌──────────┐   ┌──────────────────────┐         │          │
-│  │zigzag_scan│ → │ jpeg_entropy_encoder │ →  Huffman 码流   │
-│  │ ZZ 扫描   │   │  DC差分+AC游程+查表  │                  │
-│  └──────────┘   └──────────────────────┘                  │
-└─────────────────────────────────────────────────────────────┘
-```
+![系统模块连接图](system_module_port_connection.png)
 
 ### 数据流 pipeline
 
@@ -65,30 +55,30 @@ RGB565(16b) → Y(8b) → 8×8 Block → 2D-DCT(12b) → Quantize(12b) → Zig-Z
 
 | 模块 | 文件 | 功能 |
 |------|------|------|
-| **jpeg_compress_top** | `jpeg_compress_top.v` | 顶层模块，集成所有子模块，处理 320×320 整帧图像 |
-| **dct_2d** | `dct_2d.v` | 二维 DCT 控制器，行列分离架构，通过转置 RAM 实现 2D DCT |
-| **DCT1D** | `DCT1D.v` | 一维 8 点 DCT 引擎，AAN 蝶形算法，支持参数化位宽 |
-| **quantizer** | `quantizer.v` | 3 级流水线标量量化器，可编程量化表，支持舍入与饱和 |
-| **zigzag_scan** | `zigzag_scan.v` | Zig-Zag 扫描模块，支持水平/竖直优先两种模式 |
-| **jpeg_entropy_encoder** | `jpeg_entropy_encoder.v` | JPEG 熵编码器，DC 差分编码 + AC 游程编码 + Huffman 查表 |
-| **Y** | `Y.v` | RGB565 到 Y (亮度) 色彩空间转换 |
-| **image** | `image.v` | 图像分块控制器，将行扫描像素重组为 8×8 块 |
-| **block_fifo** | `block_fifo.v` | 像素缓冲 FIFO，连接图像分块与 DCT 模块 |
+| **jpeg_compress_top** | [`jpeg_compress_top.v`](rtl/jpeg_compress_top.v) | 顶层模块，集成所有子模块，处理 320×320 整帧图像 |
+| **dct_2d** | [`dct_2d.v`](rtl/dct_2d.v) | 二维 DCT 控制器，行列分离架构，通过转置 RAM 实现 2D DCT |
+| **DCT1D** | [`DCT1D.v`](rtl/DCT1D.v) | 一维 8 点 DCT 引擎，AAN 蝶形算法，支持参数化位宽 |
+| **quantizer** | [`quantizer.v`](rtl/quantizer.v) | 3 级流水线标量量化器，可编程量化表，支持舍入与饱和 |
+| **zigzag_scan** | [`zigzag_scan.v`](rtl/zigzag_scan.v) | Zig-Zag 扫描模块，支持水平/竖直优先两种模式 |
+| **jpeg_entropy_encoder** | [`jpeg_entropy_encoder.v`](rtl/jpeg_entropy_encoder.v) | JPEG 熵编码器，DC 差分编码 + AC 游程编码 + Huffman 查表 |
+| **Y** | [`Y.v`](rtl/Y.v) | RGB565 到 Y (亮度) 色彩空间转换 |
+| **image** | [`image.v`](rtl/image.v) | 图像分块控制器，将行扫描像素重组为 8×8 块 |
+| **block_fifo** | [`block_fifo.v`](rtl/block_fifo.v) | 像素缓冲 FIFO，连接图像分块与 DCT 模块 |
 
 ### 存储 IP (Quartus altsyncram)
 
 | 模块 | 文件 | 功能 |
 |------|------|------|
-| **arm** | `arm.v`, `arm.qip` | 8-bit × 4096 输入像素缓冲 (single-port RAM) |
-| **transpose_ram** | `transpose_ram.v`, `transpose_ram.qip` | 12-bit × 64 转置缓冲 (single-port RAM) |
-| **ram_dp** | `ram_dp.v` | 双端口 RAM 通用模板 |
+| **arm** | [`arm.v`](rtl/arm.v), [`arm.qip`](rtl/arm.qip) | 8-bit × 4096 输入像素缓冲 (single-port RAM) |
+| **transpose_ram** | [`transpose_ram.v`](rtl/transpose_ram.v), [`transpose_ram.qip`](rtl/transpose_ram.qip) | 12-bit × 64 转置缓冲 (single-port RAM) |
+| **ram_dp** | [`ram_dp.v`](rtl/ram_dp.v) | 双端口 RAM 通用模板 |
 
 ### Huffman 表
 
 | 文件 | 说明 |
 |------|------|
-| `huffman_tables.vh` | 标准 JPEG 亮度 DC/AC Huffman 码表 (Verilog 参数格式) |
-| `gen_huffman_tables.py` | Python 生成脚本，将 Huffman 表转换为 Verilog 参数 |
+| [`huffman_tables.vh`](rtl/huffman_tables.vh) | 标准 JPEG 亮度 DC/AC Huffman 码表 (Verilog 参数格式) |
+| [`gen_huffman_tables.py`](sim/gen_huffman_tables.py) | Python 生成脚本，将 Huffman 表转换为 Verilog 参数 |
 
 ---
 
@@ -130,12 +120,12 @@ RGB565(16b) → Y(8b) → 8×8 Block → 2D-DCT(12b) → Quantize(12b) → Zig-Z
 
 ### Python 参考模型
 
-| 脚本 | 功能 |
-|------|------|
-| `ref_model.py` | 定点 AAN DCT 复刻模型，生成 Zig-Zag 和熵编码参考输出 |
-| `bit_accurate_model.py` | 位精确模型，逐位对比硬件输出 |
-| `jpeg_decode.py` | JPEG 解码器，从熵编码输出重建图像并评估质量 |
-| `verify_all.py` | 完整验证脚本，生成参考、对比 HW 输出、解码图像 |
+| 脚本 | 功能 | 链接 |
+|------|------|------|
+| `ref_model.py` | 定点 AAN DCT 复刻模型，生成 Zig-Zag 和熵编码参考输出 | [查看](sim/ref_model.py) |
+| `bit_accurate_model.py` | 位精确模型，逐位对比硬件输出 | [查看](sim/bit_accurate_model.py) |
+| `jpeg_decode.py` | JPEG 解码器，从熵编码输出重建图像并评估质量 | [查看](sim/jpeg_decode.py) |
+| `verify_all.py` | 完整验证脚本，生成参考、对比 HW 输出、解码图像 | [查看](sim/verify_all.py) |
 
 ### 验证流程
 
@@ -243,7 +233,7 @@ jpeg_compress_gray/
 ### 综合与实现
 
 1. 打开 Quartus Prime
-2. 打开工程 `quartus/jpeg_compress_gray.qpf`
+2. 打开工程 [`quartus/jpeg_compress_gray.qpf`](quartus/jpeg_compress_gray.qpf)
 3. 运行 **Analysis & Synthesis** → **Fitter** → **Assembler**
 4. 生成 `.sof` 文件下载到 FPGA
 
@@ -337,12 +327,12 @@ python sim/verify_all.py --cmp-only
 
 | 问题 | 修复 | 文件 |
 |------|------|------|
-| DCT 舍入截断偏差 | 改为 `(y + 512) >>> 10` 舍入 | `DCT1D.v` |
-| 列 DCT 截断 2 MSB | DIN_W 从 10 提升到 12 | `dct_2d.v` |
-| 量化器 category 越界 | MIN_VAL 设为 -2047 | `quantizer.v` |
-| 熵编码 category 越界 | 饱和至 11 | `jpeg_entropy_encoder.v` |
-| VLI 负数编码高位垃圾 | 增加 cat 位宽掩码 | `jpeg_entropy_encoder.v` |
-| 输出数据 en_out=0 时跳变 | 增加输出寄存器 | `dct_2d.v` |
+| DCT 舍入截断偏差 | 改为 `(y + 512) >>> 10` 舍入 | [`DCT1D.v`](rtl/DCT1D.v) |
+| 列 DCT 截断 2 MSB | DIN_W 从 10 提升到 12 | [`dct_2d.v`](rtl/dct_2d.v) |
+| 量化器 category 越界 | MIN_VAL 设为 -2047 | [`quantizer.v`](rtl/quantizer.v) |
+| 熵编码 category 越界 | 饱和至 11 | [`jpeg_entropy_encoder.v`](rtl/jpeg_entropy_encoder.v) |
+| VLI 负数编码高位垃圾 | 增加 cat 位宽掩码 | [`jpeg_entropy_encoder.v`](rtl/jpeg_entropy_encoder.v) |
+| 输出数据 en_out=0 时跳变 | 增加输出寄存器 | [`dct_2d.v`](rtl/dct_2d.v) |
 
 ---
 
