@@ -1,0 +1,53 @@
+# Quartus 编译产物
+quartus/db/
+quartus/incremental_db/
+quartus/*.qws
+quartus/*.rpt
+quartus/*.done
+quartus/*.smsg
+quartus/*.summary
+quartus/*.pin
+quartus/*.jdi
+quartus/*.sld
+quartus/*.sof
+quartus/*.asm.rpt
+quartus/*.eda.rpt
+quartus/*.fit.rpt
+quartus/*.fit.smsg
+quartus/*.fit.summary
+quartus/*.flow.rpt
+quartus/*.map.rpt
+quartus/*.map.smsg
+quartus/*.map.summary
+quartus/*.sta.rpt
+quartus/*.sta.summary
+quartus/simulation/
+
+# 输出文件
+output_files/
+
+# ModelSim 仿真产物
+sim/rtl_work/
+sim/work/
+sim/__pycache__/
+sim/*.wlf
+sim/*.txt
+sim/*.pgm
+sim/image_320x320_rgb565.hex
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 编辑器和系统文件
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 大型二进制文件
+out/*.raw
+out/*.hex
+out/*.pgm
